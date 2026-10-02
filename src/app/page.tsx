@@ -51,17 +51,20 @@ export default function DashboardPage() {
       setError('');
 
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      if (userError) {
-        throw userError;
+      if (sessionError) {
+        throw sessionError;
       }
 
-      if (!user) {
-        throw new Error('You are not logged in.');
+      if (!session?.user) {
+        router.replace('/login');
+        return;
       }
+
+      const user = session.user;
 
       // Fetch profile
       const {
@@ -158,7 +161,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
