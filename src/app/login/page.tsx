@@ -9,17 +9,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setError('');
+    setSuccess('');
     setLoading(true);
 
     const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
+      ? await supabase.auth.signUp({
+          email,
+          password,
+        })
+      : await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
     setLoading(false);
 
@@ -28,6 +39,33 @@ export default function LoginPage() {
     } else {
       router.push('/');
     }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setResetLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setSuccess(
+      'Password reset link sent! Please check your email.'
+    );
   };
 
   return (
@@ -43,6 +81,12 @@ export default function LoginPage() {
         {error && (
           <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-600">
             {error}
+          </p>
+        )}
+
+        {success && (
+          <p className="mb-4 rounded bg-green-50 p-2 text-sm text-green-600">
+            {success}
           </p>
         )}
 
@@ -62,22 +106,47 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
-          className="mb-4 w-full rounded border border-gray-300 p-2"
+          className="mb-2 w-full rounded border border-gray-300 p-2"
         />
+
+        {!isSignUp && (
+          <div className="mb-4 text-right">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              {resetLoading
+                ? 'Sending reset link...'
+                : 'Forgot password?'}
+            </button>
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
           className="w-full rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Log In'}
+          {loading
+            ? 'Please wait...'
+            : isSignUp
+              ? 'Sign Up'
+              : 'Log In'}
         </button>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+          {isSignUp
+            ? 'Already have an account?'
+            : "Don't have an account?"}{' '}
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError('');
+              setSuccess('');
+            }}
             className="text-blue-600 hover:underline"
           >
             {isSignUp ? 'Log in' : 'Sign up'}
